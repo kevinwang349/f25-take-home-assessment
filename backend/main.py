@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import uvicorn
+import requests
 
 app = FastAPI(title="Weather Data System", version="1.0.0")
 
@@ -34,7 +35,31 @@ async def create_weather_request(request: WeatherRequest):
     3. Stores combined data with unique ID in memory
     4. Returns the ID to frontend
     """
-    pass
+    url = "http://api.weatherstack.com/current"
+    key = "dfa61ea90a2bc78f75dd14a004cff2c3"
+    params = {
+        "access_key": key,
+        "query": request.location
+    }
+    
+    response = requests.get(url, params=params)
+
+    if not response.ok:
+        print(f"Error: {response.status_code}")
+        return { "id": f"ERROR {response.status_code}" }
+    
+    id = str(len(weather_storage))  # sequential ids
+    responseData: dict[str, Any] = response.json()
+
+    # Ensure "success" field is always present
+    if responseData.get("success") is None:
+        responseData["success"] = True
+    
+    print(responseData)
+
+    weather_storage[id] = responseData
+
+    return { "id": id }
 
 @app.get("/weather/{weather_id}")
 async def get_weather_data(weather_id: str):

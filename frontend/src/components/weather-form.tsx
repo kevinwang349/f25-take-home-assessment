@@ -26,6 +26,11 @@ interface WeatherFormData {
   notes: string;
 }
 
+interface ErrorMessages {
+  dateError: boolean;
+  dateMsg: string;
+}
+
 function formatDateForDisplay(date: Date | undefined): string {
   if (!date) return "";
   return date.toLocaleDateString("en-US", {
@@ -69,6 +74,12 @@ export function WeatherForm() {
     id?: string;
   } | null>(null);
 
+  // Holds messages for error handling
+  const [error, setError] = useState<ErrorMessages>({
+    dateError: false,
+    dateMsg: ""
+  });
+
   const handleDateChange = (date: Date | undefined) => {
     setSelectedDate(date);
     setDisplayValue(formatDateForDisplay(date));
@@ -101,11 +112,32 @@ export function WeatherForm() {
         ...prev,
         date: formatDateForAPI(parsedDate),
       }));
+      setError({
+        dateError: false,
+        dateMsg: ""
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        date: "",
+      }));
+      setError({
+        dateError: true,
+        dateMsg: "Invalid date!"
+      });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if date is valid first
+    if (formData.date == "")  return;
+    setError({
+      dateError: false,
+      dateMsg: ""
+    })
+
     setIsSubmitting(true);
     setResult(null);
 
@@ -234,6 +266,13 @@ export function WeatherForm() {
               onChange={handleInputChange}
             />
           </div>
+          
+          {/* For error messages */}
+          {error.dateError && (
+            <div className={`p-3 rounded-md bg-red-900/20 text-red-500 border border-red-500`}>
+              <p className="text-sm font-medium">{error.dateMsg}</p>
+            </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Submitting..." : "Submit Weather Request"}
